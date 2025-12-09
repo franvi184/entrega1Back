@@ -1,4 +1,4 @@
-import fs from "fs"
+/* import fs from "fs"
 import { v4 as uuidv4 } from "uuid"
 import path from "path"
 import { json } from "stream/consumers"
@@ -67,4 +67,4 @@ export const crearCarrito = async () => {
     await guardarCarritos(carritos);
 
     return nuevoCarrito;
-};
+}; */

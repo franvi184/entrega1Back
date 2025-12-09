@@ -1,17 +1,38 @@
 import express from 'express';
-import { v4 as uuidv4} from 'uuid';
-import { leerProductos, guardarProductos } from './filesProductos.js'
-import { leerCarritos, guardarCarritos, crearCarrito } from './filesCarritos.js';
+import path from 'node:path'
+import viewRoute from "./routes/view.route.js"
+import Handlebars from "express-handlebars"
+import { Server} from 'socket.io';
+import productModel from './model/Product.model.js';
+import CartModel from './model/Cart.model.js';
+import mongoose from 'mongoose';
+import { pid } from 'node:process';
 
 const app = express();
-//con la linea 7 le decimos a express que interpretar en formato json
+//con esta linea de abajo le decimos a express que pueda interpretar json
 app.use(express.json());
+
+//conexion con mongo
+const mongoUrl = "mongodb+srv://thefrancogamer72:AMFKHjTztarcnkc1@codercluster.oikhjpm.mongodb.net/coderEco";
+
+mongoose.connect(mongoUrl)
+.then(() => console.log("conectado a MongoDB"))
+  .catch(err => console.error("error de conexión a MongoDB:", err));
+
+
+//configuracion de handlebars
+app.engine("handlebars", Handlebars.engine())
+app.set("view engine", "handlebars")
+app.set("views", path.join(process.cwd(), "src", "views"))
+
+app.use(express.static(path.join(process.cwd(), "src", "public")))
+app.use('/', viewRoute)
 
 
 //creamos el get que trae todos los productos
 app.get('/api/products', async (req, res) => {
     try {
-        const productos = await leerProductos()
+        const productos = await productModel.find()
         res.json(productos)
     }
     catch(err){
@@ -19,16 +40,23 @@ app.get('/api/products', async (req, res) => {
     }
 })
 
-//get que trae producto por id
+ //get que trae producto por id
 app.get('/api/products/:pid', async (req, res) => {
     try {
-        const productos = await leerProductos()
-        const producto = productos.find(p => p.id === req.params.pid)
-
-        if(!producto) {
-            return res.status(404).json({err: "producto no encontrado"})
+        const { pid } = req.params
+        if(!mongoose.Types.ObjectId.isValid(pid)){
+            return res.status(400).json({
+                error: "id invalido"
+            })
         }
-        res.json(producto)
+        const producto = await productModel.findById(pid)
+        if(!producto){
+            return res.status(404).json({
+                error: "no existe el producto"
+            })
+        }
+        res.send(JSON.stringify(producto, null, 2))
+
     }
     catch (err){
         console.log("error del servidor", err)
@@ -37,20 +65,24 @@ app.get('/api/products/:pid', async (req, res) => {
 
 //metodo post para crear nuevo producto
 
+
 app.post('/api/products', async (req, res) => {
     try {
-        const productos = await leerProductos();
-        const nuevoProducto = {
-            id:uuidv4(),
-            ...req.body
+        const {title, price, code, description, category} = req.body
+        if(!title || !price){
+            return res.status(400).json({
+                message: "campos incompletos"
+            })
         }
-        productos.push(nuevoProducto)
-        
-        await guardarProductos(productos)
-
-        res.status(200).json({
-            message: "Producto agregado correctamente",
-            producto: nuevoProducto
+        const newProduct = await productModel.create({
+            title,
+            price,
+            code,
+            description,
+            category
+        })
+        res.status(201).json({
+            message: "producto creado exitosamente"
         })
     }
     catch (err){
@@ -61,27 +93,27 @@ app.post('/api/products', async (req, res) => {
     }
 })
 
+
 //metodo put que permita modificar el producto sin tocar su id
 
-app.post('/api/products/:pid', async(req, res) => {
+app.put('/api/products/:pid', async(req, res) => {
     try{
-        const productos = await leerProductos();
-        const producto = productos.find(p => p.id === req.params.pid)
+       const { pid } = req.params
+        const producto = await productModel.findById(pid)
         if(!producto) {
-            console.log("no existe este producto")
             return res.status(404).json({
-                message:"no existe este producto"
+                message: "no existe el producto"
             })
         }
-        const { id, ...campoActualizar } = req.body
-        Object.assign(producto, campoActualizar);
-
-        await guardarProductos(productos)
-
-         res.status(200).json({
-            message: "Producto actualizado correctamente",
-            producto
-        });
+        const { _id, ...camposActualizar} = req.body
+        const productoActualizado = await productModel.findByIdAndUpdate(
+            pid,
+            camposActualizar,
+            {new: true}
+        )
+        res.status(200).json({
+            message: "producto actualizado correctamente"
+        })
     }   
     catch (err) {
         console.log("Error al actualizar el producto", err);
@@ -93,17 +125,18 @@ app.post('/api/products/:pid', async(req, res) => {
 
 app.delete('/api/products/:pid', async (req, res) => {
     try {
-        const productos = await leerProductos()
-        const productoExistente = productos.find(p => p.id === req.params.pid)
-        if(!productoExistente) {
-            console.log("no existe tal producto")
+        const { pid } = req.params
+        const producto = await productModel.findById(pid)
+        if(!producto){
             return res.status(404).json({
-                message: "no existe el producto"
+                message:"no se puede eliminar el producto porque no existe"
             })
         }
-        const productosActualizados = productos.filter(p => p.id !== req.params.pid)
-        await guardarProductos(productosActualizados)
-        res.status(200).json({ message: "Producto eliminado correctamente" });
+        const productoPorEliminar = await productModel.findByIdAndDelete(pid)
+
+        return res.status(200).json({
+            message: "se elimino el producto"
+        })
     }
     catch (err){
         console.log("error al eliminar el producto", err)
@@ -117,7 +150,10 @@ app.delete('/api/products/:pid', async (req, res) => {
 
 app.post('/api/carts', async (req, res) => {
     try {
-        const nuevoCarrito = await crearCarrito();
+        const nuevoCarrito = new CartModel({
+            products: []
+        })
+        await nuevoCarrito.save()
         res.status(201).json({ message: 'Carrito creado', carrito: nuevoCarrito });
     } catch (error) {
         res.status(500).json({ message: 'Error al crear carrito' });
@@ -128,8 +164,8 @@ app.post('/api/carts', async (req, res) => {
 
 app.get('/api/carts/:cid', async (req, res) => {
     try {
-    const carritos = await leerCarritos();
-    const carrito = carritos.find(c => c.id === req.params.cid)
+    const { cid } = req.params
+    const carrito = await CartModel.findById(cid)
     if(!carrito){
         console.log("no existe determinado carrito")
         return res.status(404).json({
@@ -151,40 +187,87 @@ app.get('/api/carts/:cid', async (req, res) => {
 
 //metodo post para traer el producto de un array
 
-//el metodo no funciona como deberia. cosas por corregir
-/* 
 app.post('/api/carts/:cid/products/:pid', async (req, res) => {
-    const { cid, pid } = req.params
-    const carritos = await leerCarritos();
-    const carrito = carritos.find(c => c.id === req.params.cid)
-    if(!carrito){
-        console.log("no existe tal carrito")
-        return res.status(404).json({
-            message: "no existe el carrito"
-        })
-    }
-    res.status(200).json({
-        message: "existe el carrito"
-    })
-    console.log(`el carrito con id ${cid} existe`)
-    const productos = await leerProductos();
-    const productoCarrito = carrito.products.find(p => p.id === req.params.pid)
-    try {     
-        if(!productoCarrito){
-            console.log("se agrego el producto a la lista")
-            carrito.push(products)
-        } else {
-            productos.quantity++;
-            console.log("se sumo a la lista")
+    try {
+        const { cid, pid } = req.params
+        const carrito = await CartModel.findById(cid)
+        const producto = await productModel.findById(pid)
+        if(!carrito){
+            return res.status(404).json({
+                message: "no existe el carrito con tal id"
+            })
         }
+        if(!producto){
+            return res.status(404).json({
+                message: "no existe el producto con tal id"
+            })
+        }
+        const productIndex = carrito.products.findIndex(
+            p => p.product.toString() === pid
+        )
+        if(productIndex !== -1){
+            carrito.products[productIndex].quantity += 1
+        } else {
+            carrito.products.push({
+                product: pid,
+                quantity: 1
+            })
+        }
+        await carrito.save()
     }
     catch {
-        console.log("no se puede sumar el producto")
+
     }
+}) 
 
-}) */
+app.post("/crearCarrito", async (req, res) => {
+  try {
+    const newCart = await CartModel.create({ products: [] })
 
-app.listen(8080, () => {
+    res.json({
+      status: "success",
+      payload: newCart
+    })
+  } catch (error) {
+    res.status(500).json({ status: "error", message: error.message })
+    console.log(error)
+  }
+})
+
+
+const serverHttp = app.listen(8080, () => {
     console.log("servidor escuchando en el puerto 8080")
 })
+
+//configuracion de socket
+const serverSocket = new Server(serverHttp)
+
+
+serverSocket.on('connection', async (socket) => {
+    console.log('nuevo cliente conectado', socket.id)
+    const products = await productModel.find()
+    socket.emit("products", products)
+    socket.on("newProduct", async (product) => {
+    try {
+        const newProduct = await productModel.create(product)
+
+        const products = await productModel.find()
+        serverSocket.emit("products", products)
+
+    } catch (error) {
+        console.log("Error al crear producto:", error.message)
+    }
+})
+
+    })
+
+    /* socket.on("deleteProduct", async (id) => {
+        let products = await productModel.find()
+        const productsActualizados = products.filter(p => p.id !== id)
+        await guardarProductos(productsActualizados)
+        serverSocket.emit("products", productsActualizados)
+        console.log('product eliminado')
+    }) */
+/* }) */
+
 

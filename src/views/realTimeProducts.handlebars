@@ -1,0 +1,16 @@
+<h1>Lista de productos en vivo</h1>
+
+{{!-- aca creamos los formularios para poder agregar o eliminar un prodcuto directamente desde el lado del cliente --}}
+<form id="formProduct">
+    <input type="text" id="title" placeholder="Nombre del producto" required>
+    <input type="number" id="price" placeholder="Precio" required>
+    <button type="submit">Agregar producto</button>
+</form>
+
+<hr>
+
+<div id="products">
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/realTimeProducts.js"></script>
