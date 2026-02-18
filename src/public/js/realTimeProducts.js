@@ -27,19 +27,21 @@ form.addEventListener("submit", (e) => {
 
   const title = document.getElementById("title").value;
   const price = document.getElementById("price").value;
+  const category = document.getElementById("category").value;
 
   socket.emit("newProduct", {
     title,
-    price
+    price,
+    category
   })
 
   form.reset();
 })
 
-/* const deleteProduct = (id) => {
+const deleteProduct = (id) => {
   socket.emit("deleteProduct", id)
   console.log("ME LLEGÓ EL DELETE:", id)
-} */
+}
 
 /* const deleteForm = document.getElementById("formDelete")
 deleteForm.addEventListener("submit", (e) => {

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "node src/server.js",
+    "dev": "node src/app.js",
     "dev:filesP": "node src/filesProductos.js",
     "dev:filesC": "node src/filesCarritos.js"
   },
@@ -14,10 +14,16 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "bcrypt": "^6.0.0",
+    "dotenv": "^17.2.4",
     "express": "^5.1.0",
     "express-handlebars": "^8.0.3",
     "handlebars": "^4.7.8",
+    "jsonwebtoken": "^9.0.3",
+    "nodemailer": "^6.9.3",
     "mongoose": "^9.0.0",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
     "socket.io": "^4.8.1",
     "uuid": "^13.0.0"
   },
