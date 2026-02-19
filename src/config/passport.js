@@ -3,7 +3,8 @@ import { Strategy as JwtStrategy, ExtractJwt } from "passport-jwt";
 import UserDBManager from "../DAO/userDBManager.js";
 
 const userDAO = new UserDBManager()
-const KEY = process.env.PRIVATE_KEY 
+const KEY = process.env.PRIVATE_KEY
+
 
 export const initializePassport = () => {
     passport.use(

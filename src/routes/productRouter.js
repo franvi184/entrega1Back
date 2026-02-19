@@ -47,6 +47,7 @@ app.post('/create',
     passport.authenticate("jwt", { session: false }),
     authorization(["admin"]),
     async (req, res) => {
+        console.log("REQ.USER:", req.user)
     try {
         const result = await productService.createProduct(req.body)
         res.send({
@@ -58,6 +59,7 @@ app.post('/create',
             status: 'error',
             payload: error.message
         })
+        console.log(error)
     }
 })
 

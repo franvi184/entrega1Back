@@ -75,8 +75,8 @@ class productServices {
     }
 
     async createProduct(product) {
-        const { title, price, code, description, category } = product
-        if (!title || price === undefined || !code || !description || !category) {
+        const { title, price, code, description, category, stock } = product
+        if (!title || price === undefined || !code || !description || !category || stock) {
             const error = new Error("campos incompletos")
             error.status = 400
             throw error

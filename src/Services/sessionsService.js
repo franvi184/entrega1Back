@@ -7,8 +7,8 @@ import jwt from 'jsonwebtoken'
 const userDAO = new UserDBManager()
 
 class UserService {
-    async register(data) {
-        const { first_name, last_name, email, age, password } = data
+    async register(data = {}) {
+        const { first_name, last_name, email, age, password, role } = data
 
         if (!first_name || !last_name || !email || !password) {
             const error = new Error("Campos incompletos")
@@ -29,7 +29,8 @@ class UserService {
                 last_name,
                 email,
                 age,
-                password: createHash(password)
+                password: createHash(password),
+                role: role || "user"
             })
 
             return { user }

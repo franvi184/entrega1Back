@@ -12,6 +12,7 @@ class ProductDBManager {
             .skip(skip)
             .limit(limit)
             .sort(orden)
+            .lean()
     }
 
     async getProductsById(pid){

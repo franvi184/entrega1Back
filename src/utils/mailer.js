@@ -10,7 +10,7 @@ if (SMTP_HOST && SMTP_PORT && SMTP_USER && SMTP_PASS) {
     transporter = nodemailer.createTransport({
         host: SMTP_HOST,
         port: Number(SMTP_PORT),
-        secure: Number(SMTP_PORT) === 465, // true for 465, false for other ports
+        secure: Number(SMTP_PORT) === 465,
         auth: {
             user: SMTP_USER,
             pass: SMTP_PASS
@@ -22,7 +22,7 @@ if (SMTP_HOST && SMTP_PORT && SMTP_USER && SMTP_PASS) {
 
 export const sendResetEmail = async (to, subject, html) => {
     if (!transporter) {
-        const error = new Error('SMTP not configured')
+        const error = new Error('SMTP no configurado')
         error.status = 500
         throw error
     }

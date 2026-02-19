@@ -3,10 +3,10 @@ import passport from "passport"
 import UserService from "../Services/sessionsService.js";
 import UserDTO from "../DTO/userDTO.js";
 
-const app = Router();
+const router = Router();
 const userService = new UserService()
 
-app.post("/register", async (req, res) => {
+router.post("/register", async (req, res) => {
     try {
         const result = await userService.register(req.body)
         res.status(201).json({
@@ -18,18 +18,18 @@ app.post("/register", async (req, res) => {
             status: 'error',
             payload: error.message
         })
-        console.log(error)
     }
 });
 
 
 
 
-app.post("/login", async (req, res) => {
+router.post("/login", async (req, res) => {
     try {
         const result = await userService.login(req.body)
         res.status(200).json({
-            payload: result
+            "status": "success",
+            token: result.token
         })
     } catch (error) {
         res.status(error.status || 500).send({
@@ -40,7 +40,7 @@ app.post("/login", async (req, res) => {
 });
 
 // forgot password
-app.post('/forgot-password', async (req, res) => {
+router.post('/forgot-password', async (req, res) => {
     try {
         const { email } = req.body
         const result = await userService.forgotPassword(email)
@@ -51,7 +51,7 @@ app.post('/forgot-password', async (req, res) => {
 })
 
 // reset password
-app.put('/reset-password/:token', async (req, res) => {
+router.put('/reset-password/:token', async (req, res) => {
     try {
         const { token } = req.params
         const { password } = req.body
@@ -62,7 +62,7 @@ app.put('/reset-password/:token', async (req, res) => {
     }
 })
 
-app.get(
+router.get(
     "/current",
     passport.authenticate("jwt", { session: false }),
     (req, res) => {
@@ -74,4 +74,4 @@ app.get(
     }
 )
 
-export default app;
+export default router;

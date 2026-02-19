@@ -9,7 +9,7 @@ export function initSocket(serverSocket){
     socket.on("newProduct", async (product) => {
       try {
         const newProduct = await productModel.create(product)
-        const products = await productModel.find()
+        const products = await productModel.find().lean()
         serverSocket.emit("products", products)
       } catch (error) {
         console.log("Error al crear producto:", error.message)

@@ -15,6 +15,7 @@ import { initSocket } from './websocket.js'
 const app = express();
 //con esta linea de abajo le decimos a express que pueda interpretar json
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }))
 
 // passport
 initializePassport()
